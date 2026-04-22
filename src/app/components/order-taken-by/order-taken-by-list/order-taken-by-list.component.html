@@ -1,0 +1,110 @@
+<div class="user-container">
+  <div class="search-section card">
+    <h2><i class="fas fa-user-tag"></i> Search Order Taken By</h2>
+    <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+      <div class="search-controls">
+        <div class="form-group">
+          <input 
+            type="text" 
+            formControlName="search" 
+            class="form-control" 
+            placeholder="Search by name..."
+            (keyup.enter)="onSearch()"
+          >
+        </div>
+        <div class="button-group">
+          <button type="submit" class="search-btn btn btn-sm btn-primary">
+            <i class="fas fa-search"></i> Search
+          </button>
+          <button type="button" class="search-btn btn btn-sm btn-secondary" (click)="resetForm()">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <button class="btn btn-sm btn-primary mb-2" [routerLink]="['/order-taken-by/create']"><i class="fas fa-plus"></i> Add New</button>
+
+  <div class="users-list card">
+    <div class="card-header">
+      <h2><i class="fas fa-user-tag"></i> Order Taken By</h2>
+      <div class="results-info" *ngIf="totalElements > 0">
+        Showing {{ startIndex + 1 }} - {{ endIndex }} of {{ totalElements }} records
+      </div>
+    </div>
+    
+    <div class="table-wrapper">
+      <div class="table-container">
+        <app-loader [show]="isLoading"></app-loader>
+        
+        <div class="table-responsive" [class.loading]="isLoading">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Remarks</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items; let index = index" class="user-row">
+                <td>{{ startIndex + index + 1 }}</td>
+                <td>
+                  <div class="user-name">
+                    <strong>{{ item.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="item.status === 'A' ? 'status-active' : 'status-inactive'">
+                    <i class="fas" [ngClass]="item.status === 'A' ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                    {{ item.status === 'A' ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="client-info">
+                    {{ item.remarks }}
+                  </div>
+                </td>
+                <td class="actions">
+                  <button 
+                    class="btn-icon edit" 
+                    [routerLink]="['/order-taken-by/edit', item.id]"
+                    title="Edit Record"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn-icon delete" 
+                    (click)="deleteItem(item.id!)"
+                    title="Delete Record"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!isLoading && (!items || items.length === 0)">
+                <td colspan="5" class="text-center no-data">
+                  <i class="fas fa-inbox"></i>
+                  <p>No records found</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <app-pagination
+      *ngIf="totalPages > 0"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalElements]="totalElements"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
+  </div>
+</div>

@@ -1,0 +1,454 @@
+<div class="add-quotation-container">
+  <button class="btn btn-sm btn-secondary back-btn" routerLink="/quotation">
+    <i class="fas fa-arrow-left"></i> Back to Quotations
+  </button>
+
+  <div class="form-card">
+    <div class="card-header">
+      <h2 class="form-title">
+        <i class="fas" [ngClass]="isEdit ? 'fa-edit' : 'fa-plus'"></i>
+        {{ isEdit ? 'Edit' : 'Create New' }} Quotation
+      </h2>
+    </div>
+
+    <!-- create quotation section -->
+    <form [formGroup]="quotationForm" (ngSubmit)="onSubmit()" (keydown.enter)="$event.preventDefault()"
+      class="quotation-form">
+      <div class="create-quotation-section">
+        <div class="create-quotation-header">
+          <h3><i class="fa-solid fa-receipt"></i> Create Quotation </h3>
+        </div>
+        <!-- Header Section -->
+        <div class="header-section">
+          <div class="form-row">
+            <!-- Customer Selection -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-user"></i> Select Customer
+              </label>
+              <div class="select-group">
+                <app-searchable-select formControlName="customerId" [options]="customers" labelKey="name" valueKey="id"
+                  [placeholder]="'Select Customer'" [searchPlaceholder]="'Search customers...'"></app-searchable-select>
+                <button type="button" class="btn btn-sm btn-primary refresh" style="margin-top: 3px;" (click)="refreshCustomers()"
+                  [disabled]="isLoadingCustomers" title="Refresh Customers">
+                  <i class="fas" [ngClass]="isLoadingCustomers ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Customer Name -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-user-tag"></i> Customer Name
+              </label>
+              <input type="text" formControlName="customerName" class="form-control"
+                [class.is-invalid]="isFieldInvalid('customerName')" placeholder="Enter customer name" [readonly]="isCustomerIdSelected">
+            </div>
+
+            <!--Contact number -->
+            <div class="form-group">
+              <label>
+                <i class="fa-solid fa-phone"></i> Contact Number
+              </label>
+              <input type="text" formControlName="contactNumber" class="form-control"
+                [class.is-invalid]="isFieldInvalid('contactNumber')" placeholder="Enter contact number">
+            </div>
+
+            <!-- Order Taken By -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-user-tie"></i> Order Taken By
+              </label>
+              <div class="select-group">
+                <app-searchable-select formControlName="orderTakenById" [options]="orderTakenByList" labelKey="name" valueKey="id"
+                    [placeholder]="'Select Personnel'" [searchPlaceholder]="'Search...'"></app-searchable-select>
+                <button type="button" class="btn btn-sm btn-primary refresh" style="margin-top: 3px;" (click)="refreshOrderTakenBy()"
+                  [disabled]="isLoadingOrderTakenBy" title="Refresh Personnel">
+                  <i class="fas" [ngClass]="isLoadingOrderTakenBy ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- customer address -->
+            <div class="form-group">
+              <label>
+                <i class="fa-solid fa-location-dot"></i> Address
+              </label>
+              <textarea formControlName="address" class="form-control" rows="3"
+                placeholder="Write customer address details..."></textarea>
+            </div>
+
+            <!-- Quote Date -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-calendar"></i> Quote Date
+              </label>
+              <input type="date" formControlName="quoteDate" class="form-control" readonly>
+            </div>
+
+            <!-- Valid Until -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-calendar-check"></i> Valid Until <span class="required">*</span>
+              </label>
+              <input type="date" formControlName="validUntil" class="form-control"
+                [class.is-invalid]="isFieldInvalid('validUntil')" [min]="minValidUntilDate">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('validUntil')">
+                Valid until date is required and must be after quote date
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Section -->
+      <div class="products-section" formArrayName="items">
+        <div class="products-header">
+          <h3><i class="fas fa-boxes"></i> Products</h3>
+          <div class="d-flex align-items-center gap-2">
+            <!-- Quotation Discount Input -->
+            <div class="form-group mb-0">
+              <label class="mb-1">
+                <i class="fas fa-percent"></i> Quotation Discount ({{quotationForm.get('quotationDiscount')?.value}}%)
+              </label>
+              <div class="input-group">
+                <input 
+                  type="number" 
+                  id="quotationDiscount"
+                  formControlName="quotationDiscount" 
+                  class="form-control" 
+                  min="0" 
+                  max="100" 
+                  step="0.01"
+                  (input)="onQuotationDiscountChange($event)"
+                  placeholder="0">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" (click)="addItem()">
+              <i class="fas fa-plus"></i> Add <U>P</U>roduct
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table products-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="calc-type-col">Calculation Type</th>
+                <th>Weight</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <!-- <th>Discount %</th> -->
+                <th>Remarks</th>
+                <th>Production</th> <!-- New column -->
+                <th>Status</th> <!-- New column -->
+                <th>Price</th>
+                <th>Tax (18%)</th>
+                <th>Loading Charge</th>
+                <th>Final Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of itemsFormArray.controls; let i=index" [formGroupName]="i">
+                <!-- Product Selection -->
+                <td>
+                  <div class="form-field-container">
+                    <div class="select-group">
+                      <app-searchable-select 
+                        [formControlName]="'productId'" 
+                        [options]="products" 
+                        [labelKey]="'name'"
+                        [valueKey]="'id'" 
+                        [placeholder]="''" 
+                        [searchPlaceholder]="'Search products...'"
+                        [class.is-invalid]="isItemFieldInvalid(i, 'productId')"
+                        (selectionChange)="onProductSelect(i, $event)"
+                      ></app-searchable-select>
+                      <button 
+                        type="button" 
+                        class="btn btn-sm btn-primary refresh" 
+                        (click)="refreshProducts()"
+                        [disabled]="isLoadingProducts" 
+                        title="Refresh Products"
+                      >
+                        <i class="fas" [ngClass]="isLoadingProducts ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                      </button>
+                    </div>
+                    <button *ngIf="(itemsFormArray.at(i).get('productType')?.value === 'REGULAR' || 
+                                 itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE') && 
+                                 itemsFormArray.at(i).get('calculationType')?.value !== 'NOS'" type="button"
+                      class="btn btn-sm btn-primary calculator mt-2 search-input" (click)="openCalculationDialog(i)" title="Open Calculator">
+                      <i class="fas fa-calculator"></i>
+                    </button>
+                    <button *ngIf="itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE_ROLL'" type="button"
+                      class="btn btn-sm btn-primary calculator mt-2 search-input" (click)="openPolyCarbonateRollCalculationDialog(i)" title="Open Poly Carbonate Roll Calculator">
+                      <i class="fas fa-calculator"></i>
+                    </button>
+
+                    <!-- Accessories Modal Button -->
+                    <button *ngIf="itemsFormArray.at(i).get('productType')?.value === 'ACCESSORIES'" type="button"
+                      class="btn btn-sm btn-success calculator mt-2 search-input" (click)="openAccessoriesSelectionDialog(i)" title="Select Accessories">
+                      <i class="fas fa-tools"></i> 
+                      <!-- Select Sizes -->
+                    </button>
+                  </div>
+                </td>
+
+                <!-- Calculation Type / Accessories inputs in same column -->
+                <td>
+                  <ng-container *ngIf="itemsFormArray.at(i).get('productType')?.value == 'REGULAR' || itemsFormArray.at(i).get('productType')?.value == 'POLY_CARBONATE' || itemsFormArray.at(i).get('productType')?.value == 'POLY_CARBONATE_ROLL'; else otherCalc">
+                    <div class="dropdown mb-2" *ngIf="itemsFormArray.at(i).get('productType')?.value !== 'POLY_CARBONATE_ROLL'">
+                      <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">{{ itemsFormArray.at(i).get('calculationType')?.value || 'Select Calculation Type' }}</button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <a class="dropdown-item" href="javascript:void(0)" 
+                             tabindex="0"
+                             (click)="onSelectCalculationType(i,'SQ_FEET')"
+                             (keydown.enter)="onSelectCalculationType(i,'SQ_FEET')"
+                             (keydown.space)="onSelectCalculationType(i,'SQ_FEET'); $event.preventDefault()">
+                            Sq. Feet
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="javascript:void(0)" 
+                             tabindex="0"
+                             (click)="onSelectCalculationType(i,'MM')"
+                             (keydown.enter)="onSelectCalculationType(i,'MM')"
+                             (keydown.space)="onSelectCalculationType(i,'MM'); $event.preventDefault()">
+                            MM
+                          </a>
+                        </li>
+                        <!-- <li>
+                          <a class="dropdown-item" href="javascript:void(0)" (click)="onSelectCalculationType(i,'NOS')">
+                            NOS
+                          </a>
+                        </li> -->
+                      </ul>
+                    </div>
+                    <button *ngIf="itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE_ROLL'" type="button"
+                      class="btn btn-sm btn-primary calculator mt-2 search-input" (click)="openPolyCarbonateRollCalculationDialog(i)" title="Open Poly Carbonate Roll Calculator">
+                      <i class="fas fa-calculator"></i>
+                    </button>
+                    <!-- Add calculation base dropdown for non-POLY_CARBONATE products -->
+                    <div class="dropdown calculation-base-dropdown" *ngIf="itemsFormArray.at(i).get('productType')?.value !== 'POLY_CARBONATE' && itemsFormArray.at(i).get('calculationType')?.value !== 'NOS'">
+                      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        {{ getCalculationBaseLabel(itemsFormArray.at(i).get('calculationBase')?.value) }}
+                      </button>
+                      <!-- <ul class="dropdown-menu">
+                        <li>
+                          <a class="dropdown-item" href="javascript:void(0)" (click)="setCalculationBase(i, 'W')">
+                            Weight
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="javascript:void(0)" (click)="setCalculationBase(i, 'RF')">
+                            Running Feet
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="javascript:void(0)" (click)="setCalculationBase(i, 'SF')">
+                            Sq.Feet
+                          </a>
+                        </li>
+                      </ul> -->
+                    </div>
+                  </ng-container>
+                  <ng-template #otherCalc>
+                    <ng-container *ngIf="itemsFormArray.at(i).get('productId')?.value && itemsFormArray.at(i).get('productType')?.value == 'ACCESSORIES'">
+                      <div class="text-muted text-center">
+                        <!-- Accessories Modal Button -->
+                        <button *ngIf="itemsFormArray.at(i).get('productType')?.value === 'ACCESSORIES'" type="button"
+                          class="btn btn-sm btn-success calculator mt-2 search-input" (click)="openAccessoriesSelectionDialog(i)" title="Select Accessories">
+                          <i class="fas fa-tools"></i> 
+                          <!-- Select Sizes -->
+                        </button>
+                      </div>
+                    </ng-container>
+                  </ng-template>
+                </td>
+                <!-- Weight cell -->
+                <td>
+                  <input type="number" formControlName="weight" class="form-control" readonly>
+                </td>
+
+                <!-- Common fields -->
+                <td>
+                  <input type="number" formControlName="quantity" class="form-control"
+                    [class.is-invalid]="isItemFieldInvalid(i, 'quantity')" 
+                    [class.manual-quantity]="(itemsFormArray.at(i).get('productType')?.value === 'REGULAR' || itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE') && itemsFormArray.at(i).get('calculationType')?.value === 'NOS'"
+                    min="1"
+                    [readonly]="((itemsFormArray.at(i).get('productType')?.value === 'REGULAR' || itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE') && itemsFormArray.at(i).get('calculationType')?.value !== 'NOS') || itemsFormArray.at(i).get('productType')?.value === 'ACCESSORIES' || itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE_ROLL'"
+                    placeholder="{{(itemsFormArray.at(i).get('productType')?.value === 'REGULAR' || itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE') && itemsFormArray.at(i).get('calculationType')?.value === 'NOS' ? 'Enter quantity' : (itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE_ROLL' ? 'Use calculator' : 'Auto-calculated')}}">
+                </td>
+                <td>
+                  <div class="input-group">
+
+                    <span class="input-group-text">₹</span>
+                    <input type="number" formControlName="unitPrice" class="form-control"
+                      [class.is-invalid]="isItemFieldInvalid(i, 'unitPrice')" min="0.01" step="0.01">
+                  </div>
+                </td>
+                <!-- <td>
+                  <div class="input-group">
+                    <input type="number" formControlName="discountPercentage" class="form-control"
+                      [class.is-invalid]="isItemFieldInvalid(i, 'discountPercentage')" min="0" max="100" step="0.01">
+                    <span class="input-group-text">%</span>
+                  </div>
+                </td> -->
+                <td>
+                  <input type="text" formControlName="itemRemarks" class="form-control" placeholder="Item remarks">
+                </td>
+                <!-- New Production column -->
+                <td>
+                  <div class="form-check form-switch">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      formControlName="isProduction"
+                      (change)="updateQuotationItemProduction(i, $any($event.target).checked)"
+                      [id]="'isProduction' + i">
+                    <label class="form-check-label" [for]="'isProduction' + i">
+                      {{ itemsFormArray.at(i).get('isProduction')?.value ? 'Yes' : 'No' }}
+                    </label>
+                  </div>
+                </td>
+                <!-- New Status column -->
+                <td >
+                  <select *ngIf="itemsFormArray.at(i).get('isProduction')?.value"
+                    class="form-control" 
+                    formControlName="quotationItemStatus"
+                    (change)="updateQuotationItemStatus(i, $any($event.target).value)"
+                    [disabled]="!itemsFormArray.at(i).get('id')?.value">
+                    <!-- <option value="">Select Status</option> -->
+                    <option value="O">Open</option>
+                    <option value="IP">In Process</option>
+                    <option value="C">Completed</option>
+                    <option value="B">Billed</option>
+                  </select>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" formControlName="price" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <input type="number" formControlName="taxAmount" class="form-control" readonly>
+                    <span class="input-group-text">%</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" formControlName="loadingCharge" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" formControlName="finalPrice" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <button type="button" (click)="removeItem(i)" class="btn btn-sm btn-danger">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="8" class="text-end"><strong>Total:</strong></td>
+                <td>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" [value]="totals.price" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <input type="number" [value]="totals.tax" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <input type="number" [value]="totals.loadingCharge" class="form-control" readonly>
+                  </div>
+                </td>
+                <td>
+                  <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" [value]="totals.finalPrice" class="form-control" readonly>
+                  </div>
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Additional Details -->
+      <div class="d-flex mt-3">
+        <div class="form-group w-50">
+          <label>
+            <i class="fas fa-comment"></i> Remarks
+          </label>
+          <textarea formControlName="remarks" class="form-control" rows="3" placeholder="Optional remarks"></textarea>
+        </div>
+
+        <div class="form-group w-50">
+          <label>
+            <i class="fas fa-file-contract"></i> Terms & Conditions
+          </label>
+          <textarea formControlName="termsConditions" class="form-control" rows="3"
+            placeholder="Optional terms and conditions"></textarea>
+        </div>
+      </div>
+
+      <!-- Summary Section -->
+      <div class="quotation-summary">
+        <div class="summary-item">
+          <span>Loading Charge:</span>
+          <strong>₹{{ totals.loadingCharge | number:'1.2-2' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Total Products:</span>
+          <strong>{{ itemsFormArray.length }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Total Amount:</span>
+          <strong>₹{{ getTotalAmount() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="resetForm()" [disabled]="loading">
+          <i class="fas fa-undo"></i> Reset
+        </button>
+        <!-- Show save button during create mode or when status is 'D' or 'Q' during edit mode -->
+        <button *ngIf="!isEdit || quotationStatus == 'D' || quotationStatus == 'Q' || quotationStatus == 'A' || quotationStatus == 'P'" type="submit" class="btn btn-sm btn-primary" [disabled]="quotationForm.invalid || loading">
+          <i class="fas" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          <span *ngIf="isEdit">{{ loading ? 'Updating...' : 'Update Quotation' }}</span>
+          <span *ngIf="!isEdit && loading">Saving...</span>
+          <span *ngIf="!isEdit && !loading">Save <u>Q</u>uotation</span>
+        </button>
+        <!-- Show message when in edit mode and status is not 'D' or 'Q' -->
+        <div *ngIf="isEdit && quotationStatus != 'D' && quotationStatus != 'Q' && quotationStatus != 'A' && quotationStatus != 'P'" class="alert alert-info mt-2">
+          <i class="fas fa-info-circle"></i> 
+          Quotation cannot be edited when status is "{{ quotationStatus }}". Only quotations with status "Quote" or "Declined" can be edited.
+        </div>
+      </div>
+    </form>
+    
+    <!-- Loader overlay for the form -->
+    <app-loader [show]="loading || isLoading || isLoadingProducts || isLoadingCustomers"></app-loader>
+  </div>
+</div>

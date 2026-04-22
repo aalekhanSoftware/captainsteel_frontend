@@ -1,0 +1,177 @@
+<div class="process-container">
+  <app-loader [show]="isLoading"></app-loader>
+  
+  <div class="search-section card">
+    <h2>Search Powder Coating Processes</h2>
+    <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+      <div class="search-controls">
+        <div class="form-group search-input">
+          <input 
+            type="text" 
+            formControlName="search" 
+            class="form-control" 
+            placeholder="Search processes..."
+          >
+        </div>
+        
+        <div class="form-group customer-select">
+          <app-searchable-select
+            formControlName="customerId"
+            [options]="customers"
+            labelKey="name"
+            valueKey="id"
+            [defaultOption]="{ label: 'All Customers', value: '' }"
+            [searchPlaceholder]="'Search customers...'"
+          ></app-searchable-select>
+          <button 
+            type="button" 
+            class="btn-icon refresh" 
+            (click)="refreshCustomers()" 
+            [disabled]="isLoadingCustomers"
+            title="Refresh Customers"
+          >
+            <i class="fas" [ngClass]="isLoadingCustomers ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+          </button>
+        </div>
+
+        <div class="form-group product-select">
+          <app-searchable-select
+            formControlName="productId"
+            [options]="products"
+            labelKey="name"
+            valueKey="id"
+            [defaultOption]="{ label: 'All Products', value: '' }"
+            [searchPlaceholder]="'Search products...'"
+          ></app-searchable-select>
+          <button 
+            type="button" 
+            class="btn-icon refresh" 
+            (click)="refreshProducts()" 
+            [disabled]="isLoadingProducts"
+            title="Refresh Products"
+          >
+            <i class="fas" [ngClass]="isLoadingProducts ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+          </button>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-search"></i> Search
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="resetForm()">
+            <i class="fas fa-undo"></i> Reset
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="add-process-btn">
+    <button class="btn btn-primary mb-2" routerLink="/powder-coating-process/create">
+      <i class="fas fa-plus"></i> Add New Process
+    </button>
+  </div>
+
+  <div class="processes-list card">
+    <h2>Powder Coating Processes</h2>
+
+    <div class="table-actions" *ngIf="selectedProcesses.size > 0">
+      <button 
+        class="btn btn-primary" 
+        [disabled]="isGeneratingPdf"
+        (click)="generatePdf()"
+      >
+        <i class="fas" [ngClass]="isGeneratingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
+        {{ isGeneratingPdf ? 'Generating...' : 'Generate PDF' }}
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="select-column">
+              <div class="checkbox-wrapper">
+                <input type="checkbox" disabled>
+              </div>
+            </th>
+            <th>#</th>
+            <th>Product</th>
+            <th>Customer</th>
+            <th>Total Quantity</th>
+            <th>Remaining Quantity</th>
+            <th>Total Bags</th>
+            <th>Total Amount</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th class="actions-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let process of processes; let i = index">
+            <td class="select-column">
+              <div class="checkbox-wrapper">
+                <input 
+                  type="checkbox"
+                  [checked]="selectedProcesses.has(process.id)"
+                  [disabled]="isCheckboxDisabled(process)"
+                  (click)="toggleProcessSelection(process, $event)"
+                >
+              </div>
+            </td>
+            <td>{{ startIndex + i + 1 }}</td>
+            <td>{{ process.productName }}</td>
+            <td>{{ process.customerName }}</td>
+            <td>{{ process.quantity }}</td>
+            <td>{{ process.remainingQuantity }}</td>
+            <td>{{ process.totalBags }}</td>
+            <td>{{ process.totalAmount }}</td>
+            <td>
+              <span [class]="'status-badge ' + (process.quantity === process.remainingQuantity ? 'active' : 'completed')  ">
+                {{ 0 === process.remainingQuantity ? 'Completed' : 'Active' }}
+              </span>
+            </td>
+            <td>{{ process.createdAt | date:'medium' }}</td>
+            <td class="actions-cell">
+              <button 
+                class="btn btn-icon btn-primary" 
+                [routerLink]="['/powder-coating-process/edit', process.id]"
+                title="Edit Process"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              @if(process.quantity === process.remainingQuantity) {
+              <button 
+                class="btn btn-icon btn-danger" 
+                (click)="deleteProcess(process.id)"
+                title="Delete Process"
+              >
+                  <i class="fas fa-trash"></i>
+                </button>
+              }
+              <button 
+                class="btn btn-icon btn-info" 
+                (click)="openReturnModal(process.id)"
+                title="Create Return"
+              >
+                <i class="fas fa-undo"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Replace the table-controls div (around line 75) with: -->
+    <div class="table-controls">
+      <app-pagination
+        *ngIf="totalPages > 0"
+        [currentPage]="currentPage"
+        [pageSize]="pageSize"
+        [totalElements]="totalElements"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</div>
+
+<app-return-modal (returnCreated)="loadProcesses()"></app-return-modal>

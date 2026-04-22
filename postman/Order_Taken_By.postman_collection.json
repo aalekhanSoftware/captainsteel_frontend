@@ -1,0 +1,365 @@
+{
+  "info": {
+    "name": "OrderTakenBy APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for all endpoints in `OrderTakenByController`"
+  },
+  "item": [
+    {
+      "name": "Create Order Taken By",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"status\": \"A\",\n  \"remarks\": \"Sample remarks\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"status\": \"A\",\n  \"remarks\": \"Sample remarks\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Order Taken By created successfully.\",\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"John Doe\",\n        \"status\": \"A\",\n        \"remarks\": \"Sample remarks\"\n    }\n}"
+        },
+        {
+          "name": "Validation Failed",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"status\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": false,\n    \"message\": \"Name is strictly required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Order Taken By",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 1,\n  \"name\": \"John Doe Updated\",\n  \"status\": \"I\",\n  \"remarks\": \"Updated remarks\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by/update",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by", "update"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"John Doe Updated\",\n  \"status\": \"I\",\n  \"remarks\": \"Updated remarks\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "update"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Order Taken By updated successfully.\",\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"John Doe Updated\",\n        \"status\": \"I\",\n        \"remarks\": \"Updated remarks\"\n    }\n}"
+        },
+        {
+          "name": "Not Found",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 999,\n  \"name\": \"Ghost Update\",\n  \"status\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "update"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": false,\n    \"message\": \"Order Taken By not found\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Delete Order Taken By",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by/delete",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by", "delete"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "delete"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Order Taken By deleted successfully.\",\n    \"data\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "Search Order Taken By (Paginated)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"search\": \"\",\n  \"currentPage\": 0,\n  \"perPageRecord\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by", "search"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search\": \"\",\n  \"currentPage\": 0,\n  \"perPageRecord\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "search"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Search processed.\",\n    \"data\": {\n        \"content\": [\n            {\n                \"id\": 1,\n                \"name\": \"John Doe\",\n                \"status\": \"A\",\n                \"remarks\": \"Sample remarks\"\n            }\n        ],\n        \"totalElements\": 1,\n        \"pageSize\": 10,\n        \"totalPages\": 1\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "List Active Order Taken By",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by/list-active",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by", "list-active"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/list-active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "list-active"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Active list retrieved.\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"John Doe\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Detail Order Taken By",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order-taken-by/detail",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order-taken-by", "detail"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/detail",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "detail"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Detail retrieved successfully.\",\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"John Doe\",\n        \"status\": \"A\",\n        \"remarks\": \"Sample remarks\"\n    }\n}"
+        },
+        {
+          "name": "Not Found",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 999\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order-taken-by/detail",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order-taken-by", "detail"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n    \"success\": false,\n    \"message\": \"Order Taken By not found\"\n}"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}

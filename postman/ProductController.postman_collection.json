@@ -1,0 +1,172 @@
+{
+  "info": {
+    "name": "ProductController APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for all endpoints in `ProductController`"
+  },
+  "item": [
+    {
+      "name": "Create Product",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sample Product\",\n  \"categoryId\": 1,\n  \"description\": \"Optional description\",\n  \"purchaseAmount\": 100.00,\n  \"saleAmount\": 150.00,\n  \"minimumStock\": 5,\n  \"status\": \"A\",\n  \"measurement\": \"NOS\",\n  \"remainingQuantity\": 0,\n  \"weight\": 0,\n  \"type\": \"ACCESSORIES\",\n  \"polyCarbonateType\": null,\n  \"accessoriesWeight\": {\n    \"6\": 10.5,\n    \"8\": 12.0\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Product",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Product\",\n  \"categoryId\": 1,\n  \"description\": \"Updated description\",\n  \"purchaseAmount\": 110.00,\n  \"saleAmount\": 160.00,\n  \"minimumStock\": 3,\n  \"status\": \"A\",\n  \"measurement\": \"NOS\",\n  \"remainingQuantity\": 20,\n  \"blockedQuantity\": 2,\n  \"weight\": 0,\n  \"type\": \"ACCESSORIES\",\n  \"polyCarbonateType\": null,\n  \"accessoriesWeight\": {\n    \"6\": 11.0,\n    \"8\": 13.0\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Product",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Products (simple list)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"search\": \"\",\n  \"status\": \"A\",\n  \"categoryId\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/getProducts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "getProducts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Search Products (paginated)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"search\": \"\",\n  \"status\": \"A\",\n  \"categoryId\": null,\n  \"sortBy\": \"id\",\n  \"sortDir\": \"desc\",\n  \"page\": 0,\n  \"size\": 10\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/search",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "search"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Export Products PDF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/pdf"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"search\": \"\",\n  \"status\": \"A\",\n  \"categoryId\": null,\n  \"sortBy\": \"id\",\n  \"sortDir\": \"desc\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/export-pdf",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "export-pdf"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": "1"
+    }
+  ]
+}
+
+
