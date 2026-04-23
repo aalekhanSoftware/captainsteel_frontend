@@ -20,6 +20,7 @@ import { ProductMainType, ProductCalculationType } from '../../../models/product
 import { ProductCalculationDialogComponent } from '../../../components/shared/product-calculation-dialog/product-calculation-dialog.component';
 import { ProductPolyCarbonateRollCalculationDialogComponent } from '../../../components/shared/product-poly-carbonate-roll-calculation-dialog/product-poly-carbonate-roll-calculation-dialog.component';
 import { AccessoriesSelectionDialogComponent } from '../../../components/shared/accessories-selection-dialog/accessories-selection-dialog.component';
+import { QuotationDetailData } from '../../../models/quotation.model';
 
 interface ProductOption {
   id: number;
@@ -79,6 +80,7 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
     loadingCharge: 0
   };
   private itemSubscriptions: Subscription[] = [];
+  private pendingOrderTakenByName?: string;
   hasProductionItemsFlag = false; // Add flag to track production items
 
   get quotationFormArray() {
@@ -313,6 +315,7 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.orderTakenByList = response.data;
+          this.applyPendingOrderTakenBySelection();
         }
         this.isLoadingOrderTakenBy = false;
       },
@@ -329,6 +332,7 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.orderTakenByList = response.data;
+          this.applyPendingOrderTakenBySelection();
           this.snackbar.success('Personnel list refreshed successfully');
         }
         this.isLoadingOrderTakenBy = false;
@@ -934,8 +938,8 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
 
       this.isLoading = true;
       this.quotationService.getQuotationDetail(parseInt(quotationId)).subscribe({
-        next: (response: any) => {
-          if (response) {
+        next: (response) => {
+          if (response?.success && response.data) {
             this.quotationId = parseInt(quotationId);
             this.isEdit = true;
             console.log('edit response >>',response.data)
@@ -964,11 +968,46 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
     }
   }
 
-  async populateForm(data: any) {
+  private resolveOrderTakenById(data: QuotationDetailData): number | null {
+    if (typeof data.orderTakenById === 'number') {
+      return data.orderTakenById;
+    }
+
+    if (!data.orderTakenByName) {
+      return null;
+    }
+
+    const normalizedOrderTakenByName = data.orderTakenByName.trim().toLowerCase();
+    const matchedOrderTakenBy = this.orderTakenByList.find((person) =>
+      typeof person?.name === 'string' && person.name.trim().toLowerCase() === normalizedOrderTakenByName
+    );
+
+    return typeof matchedOrderTakenBy?.id === 'number' ? matchedOrderTakenBy.id : null;
+  }
+
+  private applyPendingOrderTakenBySelection(): void {
+    if (!this.pendingOrderTakenByName || this.orderTakenByList.length === 0) {
+      return;
+    }
+
+    const normalizedPendingName = this.pendingOrderTakenByName.trim().toLowerCase();
+    const matchedOrderTakenBy = this.orderTakenByList.find((person) =>
+      typeof person?.name === 'string' && person.name.trim().toLowerCase() === normalizedPendingName
+    );
+
+    if (matchedOrderTakenBy?.id != null) {
+      this.quotationForm.patchValue({ orderTakenById: matchedOrderTakenBy.id });
+      this.pendingOrderTakenByName = undefined;
+    }
+  }
+
+  async populateForm(data: QuotationDetailData) {
     if (!data) return;
 
     // Store the quotation status
     this.quotationStatus = data.status;
+    const resolvedOrderTakenById = this.resolveOrderTakenById(data);
+    this.pendingOrderTakenByName = resolvedOrderTakenById == null ? data.orderTakenByName : undefined;
 
     // Clear existing items first
     while (this.itemsFormArray.length) {
@@ -985,6 +1024,7 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       termsConditions: data.termsConditions || '',
       address: data.address,
       contactNumber: data.contactNumber,
+      orderTakenById: resolvedOrderTakenById,
       quotationDiscount: data.quotationDiscount || 0 // Add quotation discount
     });    
 

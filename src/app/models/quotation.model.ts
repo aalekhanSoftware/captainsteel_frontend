@@ -31,6 +31,23 @@ export interface QuotationItem {
   quotationItemStatus?: 'O' | 'IP' | 'C' | 'B' | null; // 'O'-Open,'IP'-In Process,'C'-Completed,'B'-Billed
 }
 
+export interface QuotationDetailData {
+  id: number;
+  customerId?: number;
+  customerName?: string;
+  contactNumber?: string;
+  orderTakenById?: number;
+  orderTakenByName?: string;
+  quoteDate: string;
+  validUntil: string;
+  remarks?: string;
+  termsConditions?: string;
+  address?: string;
+  quotationDiscount?: number;
+  status?: string;
+  items: QuotationItem[];
+}
+
 export interface CreateQuotationRequest {
   customerId?: number;
   customerName?: string;
@@ -48,6 +65,12 @@ export interface CreateQuotationRequest {
 export interface QuotationResponse {
   success: boolean;
   message: string;
+}
+
+export interface QuotationDetailResponse {
+  success: boolean;
+  data?: QuotationDetailData;
+  message?: string;
 }
 
 export interface StatusOption {

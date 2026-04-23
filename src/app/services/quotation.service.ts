@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { CreateQuotationRequest, QuotationResponse } from '../models/quotation.model';
+import { CreateQuotationRequest, QuotationResponse, QuotationDetailResponse } from '../models/quotation.model';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -140,8 +140,8 @@ export class QuotationService {
     return this.http.put(`${this.apiUrl}/update-status`, { id, status });
   }
 
-  getQuotationDetail(id: number): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/detail`, { id }).pipe(
+  getQuotationDetail(id: number): Observable<QuotationDetailResponse> {
+    return this.http.post<QuotationDetailResponse>(`${this.apiUrl}/detail`, { id }).pipe(
       map(response => {
         if (response && response.data) {
           return {
