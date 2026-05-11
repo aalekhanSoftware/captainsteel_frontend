@@ -40,7 +40,7 @@ export interface QuotationItemDetail {
   calculationBase: string;
   itemRemarks: string;
   isProduction: boolean;
-  quotationItemStatus: 'O' | 'IP' | 'C' | 'B';
+  quotationItemStatus: 'O' | 'IP' | 'C' | 'B' | null;
   quotationDiscountAmount: number;
   productId: number;
   productName: string;

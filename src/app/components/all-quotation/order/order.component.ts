@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -27,6 +27,8 @@ import { OrderTakenBy } from '../../../models/order-taken-by.model';
   styleUrls: ['./order.component.scss']
 })
 export class OrderComponent implements OnInit {
+  private static readonly validQuotationItemStatuses = new Set<string>(['O', 'IP', 'C', 'B']);
+
   searchForm: FormGroup;
   quotationItems: QuotationItemDetail[] = [];
   currentPage = 0;
@@ -41,6 +43,7 @@ export class OrderComponent implements OnInit {
   isLoadingProducts = false;
   orderTakenByList: OrderTakenBy[] = [];
   isLoadingOrderTakenBy = false;
+  private readonly quotationItemStatusUpdatingIds = new Set<number>();
 
   quotationItemStatusOptions = [
     { value: 'O', label: 'Open' },
@@ -60,7 +63,8 @@ export class OrderComponent implements OnInit {
     private encryptionService: EncryptionService,
     private snackbar: SnackbarService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) {
     this.searchForm = this.fb.group({
       quotationItemStatuses: [['O', 'IP']], // Default selected
@@ -279,9 +283,29 @@ export class OrderComponent implements OnInit {
     this.loadQuotationItems(page);
   }
 
-  getStatusLabel(status: string): string {
+  getStatusLabel(status: string | null | undefined): string {
+    if (status == null || status === '') {
+      return '—';
+    }
     const statusOption = this.quotationItemStatusOptions.find(option => option.value === status);
     return statusOption ? statusOption.label : status;
+  }
+
+  /** Binds the native select when API value is missing or invalid. */
+  itemStatusSelectValue(item: QuotationItemDetail): 'O' | 'IP' | 'C' | 'B' {
+    const s = item.quotationItemStatus;
+    if (s === 'O' || s === 'IP' || s === 'C' || s === 'B') {
+      return s;
+    }
+    return 'O';
+  }
+
+  trackByQuotationItemId(_index: number, item: QuotationItemDetail): number {
+    return item.id;
+  }
+
+  isQuotationItemStatusUpdating(itemId: number): boolean {
+    return this.quotationItemStatusUpdatingIds.has(itemId);
   }
 
   getQuotationStatusLabel(status: string): string {
@@ -345,28 +369,46 @@ export class OrderComponent implements OnInit {
     this.searchForm.get('quotationStatuses')?.setValue(statuses);
   }
 
-  // Method to update quotation item status (same as in add-quotation.component.ts)
-  updateQuotationItemStatus(index: number, status: 'O' | 'IP' | 'C' | 'B'): void {
+  /**
+   * Updates item status via the same API as add-quotation; optimistic UI with rollback on failure.
+   */
+  updateQuotationItemStatus(index: number, status: string): void {
     const item = this.quotationItems[index];
-    const itemId = item.id;
-    
-    if (itemId) {
-      this.quotationService.updateQuotationItemStatus(itemId, status).subscribe({
-        next: (response: any) => {
-          if (response.success) {
-            // Update the local item status
-            this.quotationItems[index].quotationItemStatus = status;
-            this.snackbar.success('Quotation item status updated successfully');
-          } else {
-            this.snackbar.error(response.message || 'Failed to update quotation item status');
-          }
-        },
-        error: (error: any) => {
-          console.error('Error updating quotation item status:', error);
-          this.snackbar.error(error?.error?.message || 'Failed to update quotation item status');
-        }
-      });
+    if (!item?.id) {
+      return;
     }
+    if (!OrderComponent.validQuotationItemStatuses.has(status)) {
+      return;
+    }
+    const newStatus = status as 'O' | 'IP' | 'C' | 'B';
+    const previous = item.quotationItemStatus;
+    if (previous === newStatus) {
+      return;
+    }
+
+    item.quotationItemStatus = newStatus;
+    this.quotationItemStatusUpdatingIds.add(item.id);
+    this.cdr.markForCheck();
+
+    this.quotationService.updateQuotationItemStatus(item.id, newStatus).subscribe({
+      next: (response: any) => {
+        this.quotationItemStatusUpdatingIds.delete(item.id);
+        if (response.success) {
+          this.snackbar.success('Quotation item status updated successfully');
+        } else {
+          item.quotationItemStatus = previous;
+          this.snackbar.error(response.message || 'Failed to update quotation item status');
+        }
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        this.quotationItemStatusUpdatingIds.delete(item.id);
+        item.quotationItemStatus = previous;
+        console.error('Error updating quotation item status:', error);
+        this.snackbar.error(error?.error?.message || 'Failed to update quotation item status');
+        this.cdr.markForCheck();
+      }
+    });
   }
   
   openWhatsApp(rawNumber: string | number | null | undefined): void {

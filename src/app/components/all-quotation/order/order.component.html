@@ -140,6 +140,7 @@
             <th>Quote Date</th>
             <th>Customer Name</th>
             <th>Quotation Status</th>
+            <th>Item status</th>
             <th>Total Amount</th>
             <th>Order Taken By</th>
             <th></th>
@@ -148,11 +149,30 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of quotationItems; let i = index">
+          <tr *ngFor="let item of quotationItems; let i = index; trackBy: trackByQuotationItemId">
             <td>{{ item.quoteNumber || '-' }}</td>
             <td>{{ item.quoteDate || '-' }}</td>
             <td>{{ item.customerName || '-' }}</td>
             <td>{{ getQuotationStatusLabel(item.quotationStatus) }}</td>
+            <td class="item-status-cell">
+              <ng-container *ngIf="item.id; else itemStatusReadonly">
+                <select
+                  class="form-control status-dropdown"
+                  [value]="itemStatusSelectValue(item)"
+                  [disabled]="isQuotationItemStatusUpdating(item.id)"
+                  (change)="updateQuotationItemStatus(i, $any($event.target).value)"
+                  [attr.aria-label]="'Item status for quote ' + (item.quoteNumber || item.id)"
+                >
+                  <option value="O">Open</option>
+                  <option value="IP">In Process</option>
+                  <option value="C">Completed</option>
+                  <option value="B">Billed</option>
+                </select>
+              </ng-container>
+              <ng-template #itemStatusReadonly>
+                <span class="item-status-readonly">{{ getStatusLabel(item.quotationItemStatus) }}</span>
+              </ng-template>
+            </td>
             <td>{{ item.quotationTotalAmount | number:'1.0-2' }}</td>
             <td>{{ item.orderTakenByName || '-' }}</td>
             <td>
