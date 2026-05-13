@@ -82,6 +82,19 @@ export interface QuotationListPdfRequest {
   endDate?: string;
 }
 
+export type QuotationItemStatusCode = 'O' | 'IP' | 'C' | 'B';
+
+export interface QuotationItemsBulkStatusRequest {
+  ids: number[];
+  quotationItemStatus: QuotationItemStatusCode;
+}
+
+export interface QuotationItemsBulkStatusResponse {
+  success: boolean;
+  message: string;
+  data: { updatedCount: number } | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -160,6 +173,15 @@ export class QuotationService {
   // New methods for updating quotation item status and production flag
   updateQuotationItemStatus(id: number, status: 'O' | 'IP' | 'C' | 'B' | null): Observable<any> {
     return this.http.put(`${this.quotationItemsApiUrl}/status`, { id, quotationItemStatus: status });
+  }
+
+  updateQuotationItemsStatusBulk(
+    payload: QuotationItemsBulkStatusRequest
+  ): Observable<QuotationItemsBulkStatusResponse> {
+    return this.http.put<QuotationItemsBulkStatusResponse>(
+      `${this.quotationItemsApiUrl}/status/bulk`,
+      payload
+    );
   }
 
   updateQuotationItemProduction(id: number, isProduction: boolean): Observable<any> {

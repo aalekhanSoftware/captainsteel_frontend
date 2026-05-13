@@ -140,6 +140,83 @@
   overflow-x: auto;
 }
 
+.results-table-section {
+  min-width: 0;
+}
+
+.bulk-status-toolbar {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--supporting);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bulk-status-toolbar__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.bulk-status-toolbar__label {
+  flex: 1 1 100%;
+  margin-bottom: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+
+  @media (min-width: 576px) {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    align-self: center;
+  }
+}
+
+.bulk-status-select {
+  flex: 1 1 auto;
+  min-width: 10rem;
+  max-width: 14rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bulk-apply-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background-color: var(--primary);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: darken($primary, 10%);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.bulk-toolbar-hint,
+.bulk-toolbar-selection {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.bulk-toolbar-selection {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 .table-container {
   overflow-x: auto;
 }
@@ -223,6 +300,22 @@ table {
     font-weight: 600;
   }
 
+  .select-cell {
+    width: 3rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .row-select-checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    vertical-align: middle;
+  }
+
   tr:hover {
     background-color: rgba(174, 198, 207, 0.1);
   }
@@ -269,47 +362,9 @@ table {
   }
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+.order-results-pagination {
+  display: block;
   margin-top: 20px;
-  flex-wrap: wrap;
-
-  .page-info {
-    font-size: 14px;
-    color: var(--text-secondary);
-  }
-
-  .pagination-controls {
-    display: flex;
-    gap: 5px;
-
-    .page-button {
-      padding: 8px 12px;
-      border: 1px solid var(--supporting);
-      background-color: white;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-
-      &:hover:not(.disabled) {
-        background-color: var(--primary);
-        color: white;
-      }
-
-      &.active {
-        background-color: var(--primary);
-        color: white;
-      }
-
-      &.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-  }
 }
 
 .loading {
@@ -328,10 +383,10 @@ table {
   }
 }
 
-// Item status column (native select — uses OS picker on mobile)
+// Item status column (read-only text in grid; bulk control is above the table)
 .item-status-cell {
   vertical-align: middle;
-  min-width: 8rem;
+  min-width: 6rem;
 }
 
 .item-status-readonly {
@@ -339,7 +394,7 @@ table {
   font-size: 14px;
 }
 
-// Status dropdown styling
+// Status dropdown styling (toolbar bulk select uses .bulk-status-select overrides below)
 .status-dropdown {
   margin-top: 5px;
   padding: 4px 8px;
@@ -361,6 +416,14 @@ table {
     background-color: #f5f5f5;
     cursor: not-allowed;
   }
+}
+
+.bulk-status-toolbar .status-dropdown.bulk-status-select {
+  margin-top: 0;
+  max-width: 14rem;
+  width: auto;
+  min-width: 10rem;
+  font-size: 14px;
 }
 
 // Responsive adjustments
@@ -408,9 +471,35 @@ table {
     max-width: 100%;
   }
 
-  .pagination {
+  .bulk-status-toolbar__main {
     flex-direction: column;
-    gap: 15px;
+    align-items: stretch;
+  }
+
+  .bulk-status-toolbar__label {
+    align-self: flex-start;
+  }
+
+  .bulk-status-select {
+    max-width: 100%;
+  }
+
+  .bulk-apply-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .select-cell {
+    min-width: 48px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .row-select-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    min-width: 1.25rem;
+    min-height: 1.25rem;
   }
 }
 

@@ -1,11 +1,18 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { QuotationService, QuotationItemDetail, QuotationItemSearchRequest, QuotationListPdfRequest } from '../../../services/quotation.service';
+import {
+  QuotationService,
+  QuotationItemDetail,
+  QuotationItemSearchRequest,
+  QuotationListPdfRequest,
+  QuotationItemStatusCode
+} from '../../../services/quotation.service';
 import { CustomerService } from '../../../services/customer.service';
 import { ProductService } from '../../../services/product.service';
 import { SearchableSelectComponent } from '../../../shared/components/searchable-select/searchable-select.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { SnackbarService } from '../../../shared/services/snackbar.service';
 import { QuotationStatus } from '../../../models/quotation.model';
 import { EncryptionService } from '../../../shared/services/encryption.service';
@@ -21,7 +28,8 @@ import { OrderTakenBy } from '../../../models/order-taken-by.model';
     ReactiveFormsModule,
     FormsModule,
     RouterModule,
-    SearchableSelectComponent
+    SearchableSelectComponent,
+    PaginationComponent
   ],
   templateUrl: './order.component.html',
   styleUrls: ['./order.component.scss']
@@ -35,6 +43,7 @@ export class OrderComponent implements OnInit {
   totalPages = 0;
   totalItems = 0;
   perPageRecord = 10;
+  pageSizeOptions = [5, 10, 25, 50, 100];
   loading = false;
   isDownloadingPdf = false;
   customers: any[] = [];
@@ -43,7 +52,13 @@ export class OrderComponent implements OnInit {
   isLoadingProducts = false;
   orderTakenByList: OrderTakenBy[] = [];
   isLoadingOrderTakenBy = false;
-  private readonly quotationItemStatusUpdatingIds = new Set<number>();
+
+  /** Rows selected for bulk status update (quotation item ids). */
+  readonly selectedItemIds = new Set<number>();
+  bulkTargetStatus: QuotationItemStatusCode | '' = '';
+  isBulkStatusUpdating = false;
+
+  @ViewChild('selectAllCheckbox') selectAllCheckbox?: ElementRef<HTMLInputElement>;
 
   quotationItemStatusOptions = [
     { value: 'O', label: 'Open' },
@@ -63,8 +78,7 @@ export class OrderComponent implements OnInit {
     private encryptionService: EncryptionService,
     private snackbar: SnackbarService,
     private router: Router,
-    private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private sanitizer: DomSanitizer
   ) {
     this.searchForm = this.fb.group({
       quotationItemStatuses: [['O', 'IP']], // Default selected
@@ -75,7 +89,7 @@ export class OrderComponent implements OnInit {
       startDate: [''],
       endDate: ['']
     });
-    
+
     // Initialize quotationStatusOptions from QuotationStatus enum
     this.quotationStatusOptions = Object.entries(QuotationStatus).map(([key, value]) => ({ label: value, value: key }));
   }
@@ -113,47 +127,173 @@ export class OrderComponent implements OnInit {
         this.totalPages = response.totalPages;
         this.totalItems = response.totalItems;
         this.loading = false;
+        this.clearBulkUiState();
       },
       error: (error) => {
         console.error('Error loading quotation items:', error);
         this.snackbar.error('Failed to load quotation items');
         this.loading = false;
+        this.clearBulkUiState();
+      }
+    });
+  }
+
+  private clearBulkUiState(): void {
+    this.selectedItemIds.clear();
+    this.bulkTargetStatus = '';
+    this.queueSyncSelectAllIndeterminate();
+  }
+
+  private queueSyncSelectAllIndeterminate(): void {
+    queueMicrotask(() => this.syncSelectAllCheckboxIndeterminate());
+  }
+
+  private syncSelectAllCheckboxIndeterminate(): void {
+    const el = this.selectAllCheckbox?.nativeElement;
+    if (!el) {
+      return;
+    }
+    const ids = this.getSelectableIdsOnPage();
+    if (ids.length === 0) {
+      el.indeterminate = false;
+      return;
+    }
+    let selectedOnPage = 0;
+    for (const id of ids) {
+      if (this.selectedItemIds.has(id)) {
+        selectedOnPage++;
+      }
+    }
+    el.indeterminate = selectedOnPage > 0 && selectedOnPage < ids.length;
+  }
+
+  getSelectableIdsOnPage(): number[] {
+    return this.quotationItems.filter((item) => this.isRowSelectable(item)).map((item) => item.id);
+  }
+
+  get selectableIdsOnPageCount(): number {
+    return this.getSelectableIdsOnPage().length;
+  }
+
+  isRowSelectable(item: QuotationItemDetail): boolean {
+    return item.id != null && item.id > 0;
+  }
+
+  isRowSelected(id: number): boolean {
+    return this.selectedItemIds.has(id);
+  }
+
+  isAllSelectableOnPageSelected(): boolean {
+    const ids = this.getSelectableIdsOnPage();
+    if (ids.length === 0) {
+      return false;
+    }
+    return ids.every((id) => this.selectedItemIds.has(id));
+  }
+
+  get selectedCount(): number {
+    return this.selectedItemIds.size;
+  }
+
+  onSelectAllPageClick(event: MouseEvent): void {
+    event.preventDefault();
+    const ids = this.getSelectableIdsOnPage();
+    if (ids.length === 0 || this.isBulkStatusUpdating) {
+      return;
+    }
+    if (this.isAllSelectableOnPageSelected()) {
+      ids.forEach((id) => this.selectedItemIds.delete(id));
+    } else {
+      ids.forEach((id) => this.selectedItemIds.add(id));
+    }
+    this.queueSyncSelectAllIndeterminate();
+  }
+
+  onRowCheckboxChange(item: QuotationItemDetail, checked: boolean): void {
+    if (!this.isRowSelectable(item) || this.isBulkStatusUpdating) {
+      return;
+    }
+    if (checked) {
+      this.selectedItemIds.add(item.id);
+    } else {
+      this.selectedItemIds.delete(item.id);
+    }
+    this.queueSyncSelectAllIndeterminate();
+  }
+
+  applyBulkItemStatus(): void {
+    const ids = Array.from(this.selectedItemIds);
+    if (ids.length === 0) {
+      this.snackbar.error('Select one or more rows, choose a status, then apply.');
+      return;
+    }
+    const status = this.bulkTargetStatus;
+    if (!status || !OrderComponent.validQuotationItemStatuses.has(status)) {
+      this.snackbar.error('Choose a status to apply to the selected rows.');
+      return;
+    }
+
+    const newStatus = status as QuotationItemStatusCode;
+    this.isBulkStatusUpdating = true;
+
+    this.quotationService.updateQuotationItemsStatusBulk({ ids, quotationItemStatus: newStatus }).subscribe({
+      next: (response) => {
+        this.isBulkStatusUpdating = false;
+        if (response.success) {
+          for (const row of this.quotationItems) {
+            if (this.selectedItemIds.has(row.id)) {
+              row.quotationItemStatus = newStatus;
+            }
+          }
+          this.selectedItemIds.clear();
+          this.bulkTargetStatus = '';
+          this.queueSyncSelectAllIndeterminate();
+          this.snackbar.success(response.message || 'Quotation item statuses updated successfully');
+        } else {
+          this.snackbar.error(response.message || 'Could not update item statuses.');
+        }
+      },
+      error: (error: unknown) => {
+        this.isBulkStatusUpdating = false;
+        const msg =
+          (error as { error?: { message?: string } })?.error?.message ||
+          'Failed to update quotation item statuses.';
+        console.error('Error bulk-updating quotation item status:', error);
+        this.snackbar.error(msg);
       }
     });
   }
 
   private loadCustomers(): void {
     this.isLoadingCustomers = true;
-    this.customerService.getCustomers({ status: 'A' })
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.customers = response.data;
-          }
-          this.isLoadingCustomers = false;
-        },
-        error: (error) => {
-          this.snackbar.error('Failed to load customers');
-          this.isLoadingCustomers = false;
+    this.customerService.getCustomers({ status: 'A' }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.customers = response.data;
         }
-      });
+        this.isLoadingCustomers = false;
+      },
+      error: () => {
+        this.snackbar.error('Failed to load customers');
+        this.isLoadingCustomers = false;
+      }
+    });
   }
 
   private loadProducts(): void {
     this.isLoadingProducts = true;
-    this.productService.getProducts({ status: 'A' })
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.products = response.data;
-          }
-          this.isLoadingProducts = false;
-        },
-        error: (error) => {
-          this.snackbar.error('Failed to load products');
-          this.isLoadingProducts = false;
+    this.productService.getProducts({ status: 'A' }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.products = response.data;
         }
-      });
+        this.isLoadingProducts = false;
+      },
+      error: () => {
+        this.snackbar.error('Failed to load products');
+        this.isLoadingProducts = false;
+      }
+    });
   }
 
   private loadOrderTakenBy(): void {
@@ -174,38 +314,36 @@ export class OrderComponent implements OnInit {
 
   refreshCustomers(): void {
     this.isLoadingCustomers = true;
-    this.customerService.refreshCustomers()
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.customers = response.data;
-            this.snackbar.success('Customers refreshed successfully');
-          }
-          this.isLoadingCustomers = false;
-        },
-        error: (error) => {
-          this.snackbar.error('Failed to refresh customers');
-          this.isLoadingCustomers = false;
+    this.customerService.refreshCustomers().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.customers = response.data;
+          this.snackbar.success('Customers refreshed successfully');
         }
-      });
+        this.isLoadingCustomers = false;
+      },
+      error: () => {
+        this.snackbar.error('Failed to refresh customers');
+        this.isLoadingCustomers = false;
+      }
+    });
   }
 
   refreshProducts(): void {
     this.isLoadingProducts = true;
-    this.productService.refreshProducts()
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.products = response.data;
-            this.snackbar.success('Products refreshed successfully');
-          }
-          this.isLoadingProducts = false;
-        },
-        error: (error) => {
-          this.snackbar.error('Failed to refresh products');
-          this.isLoadingProducts = false;
+    this.productService.refreshProducts().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.products = response.data;
+          this.snackbar.success('Products refreshed successfully');
         }
-      });
+        this.isLoadingProducts = false;
+      },
+      error: () => {
+        this.snackbar.error('Failed to refresh products');
+        this.isLoadingProducts = false;
+      }
+    });
   }
 
   refreshOrderTakenBy(): void {
@@ -283,33 +421,29 @@ export class OrderComponent implements OnInit {
     this.loadQuotationItems(page);
   }
 
+  onPageSizeChange(newSize: number | string): void {
+    const n = typeof newSize === 'number' ? newSize : Number(newSize);
+    if (!Number.isFinite(n) || n <= 0) {
+      return;
+    }
+    this.perPageRecord = n;
+    this.loadQuotationItems(0);
+  }
+
   getStatusLabel(status: string | null | undefined): string {
     if (status == null || status === '') {
       return '—';
     }
-    const statusOption = this.quotationItemStatusOptions.find(option => option.value === status);
+    const statusOption = this.quotationItemStatusOptions.find((option) => option.value === status);
     return statusOption ? statusOption.label : status;
-  }
-
-  /** Binds the native select when API value is missing or invalid. */
-  itemStatusSelectValue(item: QuotationItemDetail): 'O' | 'IP' | 'C' | 'B' {
-    const s = item.quotationItemStatus;
-    if (s === 'O' || s === 'IP' || s === 'C' || s === 'B') {
-      return s;
-    }
-    return 'O';
   }
 
   trackByQuotationItemId(_index: number, item: QuotationItemDetail): number {
     return item.id;
   }
 
-  isQuotationItemStatusUpdating(itemId: number): boolean {
-    return this.quotationItemStatusUpdatingIds.has(itemId);
-  }
-
   getQuotationStatusLabel(status: string): string {
-    const statusOption = this.quotationStatusOptions.find(option => option.value === status);
+    const statusOption = this.quotationStatusOptions.find((option) => option.value === status);
     return statusOption ? statusOption.label : status;
   }
 
@@ -320,38 +454,17 @@ export class OrderComponent implements OnInit {
     this.router.navigate(['/quotation/edit', encryptedId]);
   }
 
-  // Helper method to generate page numbers for pagination
-  getPageNumbers(): number[] {
-    const pages: number[] = [];
-    const maxVisiblePages = 5;
-    
-    if (this.totalPages <= maxVisiblePages) {
-      for (let i = 0; i < this.totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const start = Math.max(0, Math.min(this.currentPage - 2, this.totalPages - maxVisiblePages));
-      const end = Math.min(this.totalPages, start + maxVisiblePages);
-      
-      for (let i = start; i < end; i++) {
-        pages.push(i);
-      }
-    }
-    
-    return pages;
-  }
-
   // Handle quotation item status checkbox changes
   onQuotationItemStatusChange(event: any, value: string): void {
     const statuses = this.searchForm.get('quotationItemStatuses')?.value || [];
     const index = statuses.indexOf(value);
-    
+
     if (event.target.checked && index === -1) {
       statuses.push(value);
     } else if (!event.target.checked && index !== -1) {
       statuses.splice(index, 1);
     }
-    
+
     this.searchForm.get('quotationItemStatuses')?.setValue(statuses);
   }
 
@@ -359,58 +472,16 @@ export class OrderComponent implements OnInit {
   onQuotationStatusChange(event: any, value: string): void {
     const statuses = this.searchForm.get('quotationStatuses')?.value || [];
     const index = statuses.indexOf(value);
-    
+
     if (event.target.checked && index === -1) {
       statuses.push(value);
     } else if (!event.target.checked && index !== -1) {
       statuses.splice(index, 1);
     }
-    
+
     this.searchForm.get('quotationStatuses')?.setValue(statuses);
   }
 
-  /**
-   * Updates item status via the same API as add-quotation; optimistic UI with rollback on failure.
-   */
-  updateQuotationItemStatus(index: number, status: string): void {
-    const item = this.quotationItems[index];
-    if (!item?.id) {
-      return;
-    }
-    if (!OrderComponent.validQuotationItemStatuses.has(status)) {
-      return;
-    }
-    const newStatus = status as 'O' | 'IP' | 'C' | 'B';
-    const previous = item.quotationItemStatus;
-    if (previous === newStatus) {
-      return;
-    }
-
-    item.quotationItemStatus = newStatus;
-    this.quotationItemStatusUpdatingIds.add(item.id);
-    this.cdr.markForCheck();
-
-    this.quotationService.updateQuotationItemStatus(item.id, newStatus).subscribe({
-      next: (response: any) => {
-        this.quotationItemStatusUpdatingIds.delete(item.id);
-        if (response.success) {
-          this.snackbar.success('Quotation item status updated successfully');
-        } else {
-          item.quotationItemStatus = previous;
-          this.snackbar.error(response.message || 'Failed to update quotation item status');
-        }
-        this.cdr.markForCheck();
-      },
-      error: (error: any) => {
-        this.quotationItemStatusUpdatingIds.delete(item.id);
-        item.quotationItemStatus = previous;
-        console.error('Error updating quotation item status:', error);
-        this.snackbar.error(error?.error?.message || 'Failed to update quotation item status');
-        this.cdr.markForCheck();
-      }
-    });
-  }
-  
   openWhatsApp(rawNumber: string | number | null | undefined): void {
     const digits = String(rawNumber ?? '').replace(/\D/g, '');
     if (!digits) {
@@ -438,7 +509,6 @@ export class OrderComponent implements OnInit {
       // Swallow errors; native handlers may block exceptions
     }
   }
-    
 
   sanitizeHtml(html: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(html);

@@ -132,73 +132,115 @@
   </div>
 
   <div class="results-card">
-    <div class="table-container" *ngIf="!loading && quotationItems.length > 0">
-      <table>
-        <thead>
-          <tr>
-            <th>Quote Number</th>
-            <th>Quote Date</th>
-            <th>Customer Name</th>
-            <th>Quotation Status</th>
-            <th>Item status</th>
-            <th>Total Amount</th>
-            <th>Order Taken By</th>
-            <th></th>
-            <th>Contact</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of quotationItems; let i = index; trackBy: trackByQuotationItemId">
-            <td>{{ item.quoteNumber || '-' }}</td>
-            <td>{{ item.quoteDate || '-' }}</td>
-            <td>{{ item.customerName || '-' }}</td>
-            <td>{{ getQuotationStatusLabel(item.quotationStatus) }}</td>
-            <td class="item-status-cell">
-              <ng-container *ngIf="item.id; else itemStatusReadonly">
-                <select
-                  class="form-control status-dropdown"
-                  [value]="itemStatusSelectValue(item)"
-                  [disabled]="isQuotationItemStatusUpdating(item.id)"
-                  (change)="updateQuotationItemStatus(i, $any($event.target).value)"
-                  [attr.aria-label]="'Item status for quote ' + (item.quoteNumber || item.id)"
-                >
-                  <option value="O">Open</option>
-                  <option value="IP">In Process</option>
-                  <option value="C">Completed</option>
-                  <option value="B">Billed</option>
-                </select>
-              </ng-container>
-              <ng-template #itemStatusReadonly>
+    <div *ngIf="!loading && quotationItems.length > 0" class="results-table-section">
+      <div class="bulk-status-toolbar">
+        <div class="bulk-status-toolbar__main">
+          <label class="bulk-status-toolbar__label" for="bulkItemStatusSelect">Update item status</label>
+          <select
+            id="bulkItemStatusSelect"
+            name="bulkItemStatus"
+            class="form-control status-dropdown bulk-status-select"
+            [(ngModel)]="bulkTargetStatus"
+            [disabled]="isBulkStatusUpdating"
+            [attr.aria-describedby]="selectedCount === 0 ? 'bulkStatusHint' : null"
+          >
+            <option value="">Choose status…</option>
+            <option value="O">Open</option>
+            <option value="IP">In Process</option>
+            <option value="C">Completed</option>
+            <option value="B">Billed</option>
+          </select>
+          <button
+            type="button"
+            class="btn btn-primary bulk-apply-btn"
+            (click)="applyBulkItemStatus()"
+            [disabled]="isBulkStatusUpdating || selectedCount === 0 || !bulkTargetStatus"
+          >
+            {{ isBulkStatusUpdating ? 'Applying…' : 'Apply to selected' }}
+          </button>
+        </div>
+        <p id="bulkStatusHint" class="bulk-toolbar-hint" *ngIf="selectedCount === 0">
+          Select one or more rows, choose a status, then apply.
+        </p>
+        <p class="bulk-toolbar-selection" *ngIf="selectedCount > 0" role="status">
+          {{ selectedCount }} row{{ selectedCount === 1 ? '' : 's' }} selected
+        </p>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="select-cell" scope="col">
+                <input
+                  #selectAllCheckbox
+                  type="checkbox"
+                  class="row-select-checkbox"
+                  [checked]="isAllSelectableOnPageSelected()"
+                  [disabled]="selectableIdsOnPageCount === 0 || isBulkStatusUpdating"
+                  (click)="onSelectAllPageClick($event)"
+                  title="Select all rows on this page"
+                  aria-label="Select all quotation items on this page"
+                />
+              </th>
+              <th>Quote Number</th>
+              <th>Quote Date</th>
+              <th>Customer Name</th>
+              <th>Quotation Status</th>
+              <th>Item status</th>
+              <th>Total Amount</th>
+              <th>Order Taken By</th>
+              <th></th>
+              <th>Contact</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of quotationItems; trackBy: trackByQuotationItemId">
+              <td class="select-cell">
+                <input
+                  type="checkbox"
+                  class="row-select-checkbox"
+                  [checked]="isRowSelected(item.id)"
+                  [disabled]="!isRowSelectable(item) || isBulkStatusUpdating"
+                  (change)="onRowCheckboxChange(item, $any($event.target).checked)"
+                  [attr.aria-label]="'Select quotation item ' + (item.quoteNumber || item.id)"
+                />
+              </td>
+              <td>{{ item.quoteNumber || '-' }}</td>
+              <td>{{ item.quoteDate || '-' }}</td>
+              <td>{{ item.customerName || '-' }}</td>
+              <td>{{ getQuotationStatusLabel(item.quotationStatus) }}</td>
+              <td class="item-status-cell">
                 <span class="item-status-readonly">{{ getStatusLabel(item.quotationItemStatus) }}</span>
-              </ng-template>
-            </td>
-            <td>{{ item.quotationTotalAmount | number:'1.0-2' }}</td>
-            <td>{{ item.orderTakenByName || '-' }}</td>
-            <td>
-              <div *ngIf="item.contactNumber" style="display: flex; gap: 0.5rem;">
-                <button class="btn-icon whatsapp" title="Open WhatsApp" (click)="openWhatsApp(item.contactNumber)">
-                  <i class="fab fa-whatsapp"></i>
-                </button>
-                <button class="btn-icon call" title="Call" (click)="makeCall(item.contactNumber)">
-                  <i class="fas fa-phone"></i>
-                </button>
-              </div>
-            </td>
-            <td>{{ item.contactNumber }}</td>
-            <td class="action-cell">
-              <!-- <a class="edit-link" (click)="editQuotation(item.quotationId)">Edit Quotation</a> -->
-              <button 
-                  class="btn-icon edit" 
+              </td>
+              <td>{{ item.quotationTotalAmount | number:'1.0-2' }}</td>
+              <td>{{ item.orderTakenByName || '-' }}</td>
+              <td>
+                <div *ngIf="item.contactNumber" style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="btn-icon whatsapp" title="Open WhatsApp" (click)="openWhatsApp(item.contactNumber)">
+                    <i class="fab fa-whatsapp"></i>
+                  </button>
+                  <button type="button" class="btn-icon call" title="Call" (click)="makeCall(item.contactNumber)">
+                    <i class="fas fa-phone"></i>
+                  </button>
+                </div>
+              </td>
+              <td>{{ item.contactNumber }}</td>
+              <td class="action-cell">
+                <button
+                  type="button"
+                  class="btn-icon edit"
                   (click)="editQuotation(item.quotationId!)"
                   title="Edit quotation"
                 >
                   <i class="fas fa-edit"></i>
                 </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="loading" *ngIf="loading">
@@ -209,33 +251,15 @@
       <p>No quotation orders found.</p>
     </div>
 
-    <div class="pagination" *ngIf="!loading && quotationItems.length > 0 && totalPages > 1">
-      <div class="page-info">
-        Showing {{ currentPage + 1 }} of {{ totalPages }} pages ({{ totalItems }} total items)
-      </div>
-      <div class="pagination-controls">
-        <button 
-          class="page-button" 
-          [disabled]="currentPage === 0"
-          (click)="onPageChange(currentPage - 1)">
-          Previous
-        </button>
-        
-        <button 
-          class="page-button" 
-          *ngFor="let page of getPageNumbers()" 
-          [class.active]="page === currentPage"
-          (click)="onPageChange(page)">
-          {{ page + 1 }}
-        </button>
-        
-        <button 
-          class="page-button" 
-          [disabled]="currentPage === totalPages - 1"
-          (click)="onPageChange(currentPage + 1)">
-          Next
-        </button>
-      </div>
-    </div>
+    <app-pagination
+      class="order-results-pagination"
+      *ngIf="!loading && quotationItems.length > 0 && totalPages > 0"
+      [currentPage]="currentPage"
+      [pageSize]="perPageRecord"
+      [totalElements]="totalItems"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
   </div>
 </div>
