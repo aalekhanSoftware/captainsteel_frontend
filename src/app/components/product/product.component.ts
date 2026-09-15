@@ -96,6 +96,7 @@ export class ProductComponent implements OnInit {
       type: ['NOS'],
       description: [''],
       polyCarbonateType: [''],
+      hsnCode: ['', [Validators.maxLength(20), Validators.pattern(/^[A-Za-z0-9]*$/)]],
       sqFeetMultiplier: [3.5], // Default value
       remainingQuantity: [0, [Validators.required]],
       blockedQuantity: [0, [Validators.required, Validators.min(0)]],
@@ -225,6 +226,10 @@ export class ProductComponent implements OnInit {
         : null
     };
 
+    // Normalize HSN code: trim and send null when empty (backend treats it as optional)
+    const rawHsn = (this.productForm.get('hsnCode')?.value ?? '').toString().trim();
+    productData.hsnCode = rawHsn ? rawHsn : null;
+
     // For REGULAR products, ensure sqFeetMultiplier is included
     if (this.productForm.get('type')?.value === 'REGULAR') {
       // If sqFeetMultiplier is null, zero, or not set, use default 3.5
@@ -325,6 +330,7 @@ export class ProductComponent implements OnInit {
       remainingQuantity: product.remainingQuantity,
       blockedQuantity: product.blockedQuantity,
       totalRemainingQuantity: product.totalRemainingQuantity,
+      hsnCode: (product as any)?.hsnCode ?? '',
       ...( product?.polyCarbonateType ? {polyCarbonateType: product.polyCarbonateType} : {})
     });
 
@@ -404,6 +410,7 @@ export class ProductComponent implements OnInit {
       measurement: 'kg',
       weight: 0,
       type: ProductMainType.NOS,
+      hsnCode: '',
       sqFeetMultiplier: 3.5 // Default value
     });
     
@@ -442,6 +449,7 @@ export class ProductComponent implements OnInit {
       saleAmount: 0,
       measurement: 'kg',
       weight: 0,
+      hsnCode: '',
       sqFeetMultiplier: 3.5, // Default value
       remainingQuantity: 0,
       blockedQuantity: 0

@@ -9,6 +9,8 @@ export enum QuotationStatus {
 export interface QuotationItem {
   id?: number; // Add ID field for updating status and production
   productId: number;
+  productName?: string;
+  hsnCode?: string;
   quantity: number;
   unitPrice: number;
   taxPercentage: number;

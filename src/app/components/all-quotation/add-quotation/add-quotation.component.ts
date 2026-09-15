@@ -714,7 +714,6 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
   onProductSelect(index: number, event: any): void {
     const selectedProduct = this.products.find(p => p.id === event.value);
     if (!selectedProduct) return;
-
     const itemGroup = this.itemsFormArray.at(index);
     const calculationTypeControl = itemGroup.get('calculationType');
 
@@ -758,6 +757,17 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
     }
 
     calculationTypeControl?.updateValueAndValidity();
+  }
+
+  /** Returns the HSN code of the product selected in the given quotation row, if any. */
+  getProductHsnCode(index: number): string {
+    const itemGroup = this.itemsFormArray?.at(index);
+    if (!itemGroup) return '';
+    const productId = itemGroup.get('productId')?.value;
+    if (productId == null || productId === '') return '';
+    const selectedProduct = this.products.find(p => p.id === productId);
+    const hsn = selectedProduct?.hsnCode ?? selectedProduct?.hsn_code ?? '';
+    return (hsn ?? '').toString().trim();
   }
 
   openCalculationDialog(index: number): void {

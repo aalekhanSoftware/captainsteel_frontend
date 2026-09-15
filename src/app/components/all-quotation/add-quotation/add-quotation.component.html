@@ -176,7 +176,10 @@
                       >
                         <i class="fas" [ngClass]="isLoadingProducts ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
                       </button>
-                    </div>
+                      </div>
+                      <small class="text-muted d-block mt-1" *ngIf="getProductHsnCode(i)">
+                        HSN: {{ getProductHsnCode(i) }}
+                      </small>
                     <button *ngIf="(itemsFormArray.at(i).get('productType')?.value === 'REGULAR' || 
                                  itemsFormArray.at(i).get('productType')?.value === 'POLY_CARBONATE') && 
                                  itemsFormArray.at(i).get('calculationType')?.value !== 'NOS'" type="button"

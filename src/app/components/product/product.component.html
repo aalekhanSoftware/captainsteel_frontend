@@ -51,6 +51,7 @@
             <th>Name</th>
             <th>Category</th>
             <th>Description</th>
+            <th>HSN Code</th>
             <th>Min Stock</th>
             <th>Status</th>
             <th>Remaining Quantity</th>
@@ -66,6 +67,7 @@
             <td [innerHTML]="sanitizeHtml(product.name)"></td>
             <td>{{ product.categoryName }}</td>
             <td>{{ product.description }}</td>
+            <td>{{ product.hsnCode || '-' }}</td>
             <td>{{ product.minimumStock }}</td>
             <td>
               <span [class.badge-active]="product.status === 'A'"
@@ -252,6 +254,25 @@
           formControlName="weight" 
           class="form-control"
         >
+      </div>
+
+      <div class="form-group">
+        <label for="hsnCode">
+          <i class="fas fa-barcode"></i> HSN Code
+        </label>
+        <input
+          type="text"
+          id="hsnCode"
+          formControlName="hsnCode"
+          class="form-control"
+          maxlength="20"
+          autocomplete="off"
+          placeholder="Enter HSN code (optional)"
+          [class.is-invalid]="isFieldInvalid('hsnCode')"
+        >
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('hsnCode')">
+          HSN code must be up to 20 alphanumeric characters without spaces
+        </div>
       </div>
 
       <div class="form-group">

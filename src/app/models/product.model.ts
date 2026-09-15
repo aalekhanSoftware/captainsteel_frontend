@@ -49,6 +49,8 @@ export interface Product {
   // New normalized map from API: keys like "6","8",... with numeric rates
   accessoriesWeight?: { [size: string]: number };
   accessories_size_rate?: { [size: string]: number };
+  // HSN (Harmonized System of Nomenclature) code for GST/tax purposes
+  hsnCode?: string;
 }
 
 export interface ProductSearchRequest {
