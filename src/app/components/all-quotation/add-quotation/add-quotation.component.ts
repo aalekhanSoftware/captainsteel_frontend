@@ -1038,7 +1038,8 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       quotationDiscount: data.quotationDiscount || 0 // Add quotation discount
     });    
 
-    // Group ACCESSORIES items by productId, keep others as is
+    // Group ACCESSORIES items by productId while preserving insertion order:
+    // each accessories group is anchored at its first occurrence, so NOS/TRANSPORT etc. stay in place.
     const groupedItems: any[] = [];
     const accessoriesGroups: { [productId: number]: any[] } = {};
     
@@ -1047,16 +1048,12 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
         if (item.productType === 'ACCESSORIES') {
           if (!accessoriesGroups[item.productId]) {
             accessoriesGroups[item.productId] = [];
+            groupedItems.push({ type: 'accessories', items: accessoriesGroups[item.productId] });
           }
           accessoriesGroups[item.productId].push(item);
         } else {
           groupedItems.push({ type: 'single', item });
         }
-      });
-      
-      // Add grouped accessories
-      Object.keys(accessoriesGroups).forEach(productId => {
-        groupedItems.push({ type: 'accessories', items: accessoriesGroups[Number(productId)] });
       });
     }
     
