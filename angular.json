@@ -44,8 +44,8 @@
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ],
-            // "baseHref": "https://admin.captainsteelroofsolution.com/",
-            // "deployUrl": "https://admin.captainsteelroofsolution.com/"
+            "baseHref": "https://admin.captainsteelroofsolution.com/",
+            "deployUrl": "https://admin.captainsteelroofsolution.com/"
           },
           "configurations": {
             "production": {
