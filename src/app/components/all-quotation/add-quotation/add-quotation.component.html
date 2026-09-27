@@ -135,6 +135,7 @@
           <table class="table products-table">
             <thead>
               <tr>
+                <th class="order-col" title="Drag handle to reorder items">No.</th>
                 <th>Product</th>
                 <th class="calc-type-col">Calculation Type</th>
                 <th>Weight</th>
@@ -151,8 +152,15 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr *ngFor="let item of itemsFormArray.controls; let i=index" [formGroupName]="i">
+            <tbody cdkDropList (cdkDropListDropped)="onItemDrop($event)">
+              <tr *ngFor="let item of itemsFormArray.controls; let i=index; trackBy: trackByItemControl" [formGroupName]="i" cdkDrag [attr.aria-label]="'Quotation item ' + (i + 1)">
+                <!-- Drag / order cell -->
+                <td class="order-cell">
+                  <span class="drag-handle" cdkDragHandle title="Drag to reorder" [attr.aria-label]="'Drag to reorder item ' + (i + 1)">
+                    <i class="fas fa-grip-vertical" aria-hidden="true"></i>
+                    <span class="row-number">{{ i + 1 }}</span>
+                  </span>
+                </td>
                 <!-- Product Selection -->
                 <td>
                   <div class="form-field-container">
@@ -367,7 +375,7 @@
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="8" class="text-end"><strong>Total:</strong></td>
+                <td colspan="9" class="text-end"><strong>Total:</strong></td>
                 <td>
                   <div class="input-group">
                     <span class="input-group-text">₹</span>

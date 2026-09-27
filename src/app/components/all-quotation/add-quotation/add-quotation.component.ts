@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil, Subscription } from 'rxjs';
 import { formatDate } from '@angular/common';
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
+import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 
 import { QuotationService } from '../../../services/quotation.service';
 import { ProductService } from '../../../services/product.service';
@@ -38,7 +39,8 @@ interface ProductOption {
     RouterModule,
     LoaderComponent,
     SearchableSelectComponent,
-    PaginationComponent
+    PaginationComponent,
+    DragDropModule
   ],
   animations: [
     trigger('dialogAnimation', [
@@ -345,13 +347,19 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
   }
 
   private setupItemCalculations(group: FormGroup, index: number) {
+    const resolveIndex = () => this.itemsFormArray
+      ? this.itemsFormArray.controls.indexOf(group)
+      : index;
     const fields = ['quantity', 'unitPrice', 'taxPercentage', 'discountPercentage'];
 
     fields.forEach(field => {
       group.get(field)?.valueChanges
         .pipe(takeUntil(this.destroy$))
         .subscribe(() => {
-          this.calculateItemPrice(index);
+          const liveIndex = resolveIndex();
+          if (liveIndex >= 0) {
+            this.calculateItemPrice(liveIndex);
+          }
         });
     });
     
@@ -359,7 +367,10 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
     group.get('calculationBase')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        this.calculateItemPrice(index);
+        const liveIndex = resolveIndex();
+        if (liveIndex >= 0) {
+          this.calculateItemPrice(liveIndex);
+        }
       });
     
     // Listen to weight changes for REGULAR, POLY_CARBONATE, and ACCESSORIES products (affects loading charge)
@@ -368,7 +379,10 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         const productType = group.get('productType')?.value;
         if (productType === 'REGULAR' || productType === 'POLY_CARBONATE' || productType === 'ACCESSORIES') {
-          this.calculateItemPrice(index);
+          const liveIndex = resolveIndex();
+          if (liveIndex >= 0) {
+            this.calculateItemPrice(liveIndex);
+          }
         }
       });
     
@@ -378,7 +392,10 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         const productType = group.get('productType')?.value;
         if (productType === 'ACCESSORIES') {
-          this.calculateItemPrice(index);
+          const liveIndex = resolveIndex();
+          if (liveIndex >= 0) {
+            this.calculateItemPrice(liveIndex);
+          }
         }
       });
   }
@@ -1585,11 +1602,57 @@ export class AddQuotationComponent implements OnInit, OnDestroy {
 
   private subscribeToItemChanges(control: AbstractControl, index: number): void {
     const subscription = control.valueChanges.subscribe(() => {
-      this.calculateItemPrice(index);
+      const liveIndex = this.itemsFormArray
+        ? this.itemsFormArray.controls.indexOf(control)
+        : index;
+      if (liveIndex >= 0) {
+        this.calculateItemPrice(liveIndex);
+      }
       // Check if any items have production enabled
       this.hasProductionItemsFlag = this.hasProductionItems();
     });
     this.itemSubscriptions[index] = subscription;
+  }
+
+  trackByItemControl(index: number, control: AbstractControl): object {
+    return control;
+  }
+
+  onItemDrop(event: CdkDragDrop<AbstractControl[]>): void {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
+    this.moveItem(event.previousIndex, event.currentIndex);
+  }
+
+  moveItem(fromIndex: number, toIndex: number): void {
+    const controls = this.itemsFormArray.controls;
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= controls.length || toIndex >= controls.length) {
+      return;
+    }
+    const [movedControl] = controls.splice(fromIndex, 1);
+    controls.splice(toIndex, 0, movedControl);
+    const [movedSub] = this.itemSubscriptions.splice(fromIndex, 1);
+    if (movedSub) {
+      this.itemSubscriptions.splice(toIndex, 0, movedSub);
+    }
+    this.itemsFormArray.updateValueAndValidity({ emitEvent: false });
+    this.calculateTotalAmount();
+    this.hasProductionItemsFlag = this.hasProductionItems();
+  }
+
+  moveItemUp(index: number): void {
+    if (index <= 0) {
+      return;
+    }
+    this.moveItem(index, index - 1);
+  }
+
+  moveItemDown(index: number): void {
+    if (index < 0 || index >= this.itemsFormArray.length - 1) {
+      return;
+    }
+    this.moveItem(index, index + 1);
   }
 
   // Add method to get calculation base label
